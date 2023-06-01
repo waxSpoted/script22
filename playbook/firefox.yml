@@ -1,0 +1,8 @@
+- name: Installation de firefox
+  remote_user: ansible
+  hosts: ExampleHost
+  tasks:
+    - name: Install firefox
+      win_chocolatey:
+        name: firefox
+        state : present

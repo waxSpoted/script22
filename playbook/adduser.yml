@@ -1,0 +1,11 @@
+- name: Création d'utilisateur
+  remote_user: ansible
+  hosts: ExampleHost
+  tasks:
+    - name: Ensure user is present
+      ansible.windows.win_user:
+        name: ExampleUserName
+        password: ExampleUserPassword
+        state: present 
+        groups:
+          - Utilisateurs
