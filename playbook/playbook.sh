@@ -13,7 +13,7 @@ function addUser()
 	password=$(zenity --entry --text="Quel est le mot de passe de l'utilisateur $name?")
 	#read password
 	cp $chemin/adduser.yml $chemin/backup.yml
-	sed -i "s/ExampleHost/$host/g" $chemin/backup.yml
+	sed -i "s/ExampleHost/$majHost/g" $chemin/backup.yml
 	sed -i "s/ExampleUserName/$name/g" $chemin/backup.yml
 	sed -i "s/ExampleUserPassword/$password/g" $chemin/backup.yml
 	ansible-playbook $chemin/backup.yml
