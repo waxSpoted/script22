@@ -141,10 +141,11 @@ function host()
 				echo "Voulez-vous donner un alias à votre machine ? [O/N]"
 				reponse=$(zenity --question --text="Voulez vous donner un alias à votre machine?")
 				resul=$?
+				echo " resul alias = $resul"
 				#read reponse
-				if [ $resul -eq 0]
-				#if [ $reponse == "O" -o $reponse == "o" -o $reponse == "oui" -o $reponse == "Oui" -o $reponse == "OUI" ]
+				if [ $resul -eq 0 ]
 				then
+				#if [ $reponse == "O" -o $reponse == "o" -o $reponse == "oui" -o $reponse == "Oui" -o $reponse == "OUI" ]
 					echo "Quel alias voulez-vous donner ?"
 					surnom=$(zenity --entry --text="Quel alias voulez-vous donner?")
 					#read surnom 
