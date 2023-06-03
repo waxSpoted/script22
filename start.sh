@@ -1,10 +1,12 @@
 #!/bin/bash
+#rend exécutable les scripts présent dans les répertoires 
 chemin=$(pwd)
 chmod +x $chemin/script/installation.sh
 chmod +x $chemin/script/host.sh
 chmod +x $chemin/script/hostAlias.sh
 chmod +x $chemin/playbook/playbook.sh
 
+#Fonction pour le menu principal 
 function initial() 
 {
 	echo "  ___         _      _     ___ ___ ___ "
@@ -19,7 +21,12 @@ function initial()
 	echo "99 - exit"
 	echo ""
 	choix=$(zenity --width=320 --height=220 --list --column=numéro --column=option "1" "installation de paquets" "2" "ajouter un hôt"e "3" "exécuter un playbook" "99" "exit" --text="Que souhaitez vous faire?")
-	#read choix
+	#Ret permet de savoir si on clique sur le bouton annuler ou valider, si on clique sur annuler on sort du script
+	ret=$?
+	if [ $ret == 1 ]
+	then 
+		return 99
+	fi 
 	if [ $choix == 1 ]
 	then
 		installation
@@ -37,12 +44,13 @@ function initial()
 
 	if [ $choix == 99 ]
 	then
-		echo ""
+		return 99
 	fi
 }
 function playbook()
 {
 	./playbook/playbook.sh $(pwd) 
+	initial
 }
 function installation()
 {
@@ -55,10 +63,12 @@ function installation()
 }
 function configWin()
 {
+	#Vérifie si le fichier de config windows existe ou non 
 	if [ -e  /etc/ansible/group_vars/windows.yml ]
 	then 
 		echo "la configuration de windows existe déjà"
 	else 
+		#Vérifie si le répertoire group_vars est crée, si oui on ajoute la config windows sinon on crée le repertoire et on crée la config windows
 		if [ -d /etc/ansible/group_vars ]
 		then
 			echo "création de la configuration de windows"
@@ -84,6 +94,7 @@ function configWin()
 }
 function configLinux()
 {
+	#Vérifie si la config $1 (étant le groupe écrit par l'utilisateur) existe 
 	if [ -e  /etc/ansible/group_vars/$1.yml ]
 	then 
 		echo "la configuration de $1 existe déjà"
@@ -114,8 +125,10 @@ function goodIP()
 {
 	res=0
 	ip=$1
+	#Vérifie qu'il n'y ai pas plus de 3 . dans l'écriture de l'ip, une ip ne pouvant pas être x.x.x.x.
 	if [ $(awk -F"." '{print NF-1}' <<< "$ip") == 3 ]
 	then
+		#Vérifie que la longueur de l'ip renseignée soit inférieur à 16 (xxx.xxx.xxx.xxx = 15 caractères)
 		longueur=${#ip}
 		if [ $longueur -lt 16 ]
 		then
@@ -132,8 +145,15 @@ function host()
 	then
 		echo "Dans quel groupe voulez vous mettre cette machine ?"
 		host=$(zenity --entry --text="Dans quel groupe voulez vous mettre cette machine?")
-		#read host 
+		ret=$?
+		#Si l'utilisateur clique sur 'annuler'(valeur de retour 1) on return 99 pour arrêter le script 
+		if [ $ret == 1 ]
+		then
+			return 99
+		fi 
+		#Récupère la valeur de host et la met entièrement en majuscule
 		majHost=${host^^}
+		#On différencie les machines windows et linux car pas la même configuration 
 		if [ $majHost == "WINDOWS" ]
 		then
 			if [ -e /etc/ansible/group_vars/windows.yml ]
@@ -141,22 +161,27 @@ function host()
 				echo "Voulez-vous donner un alias à votre machine ? [O/N]"
 				reponse=$(zenity --question --text="Voulez vous donner un alias à votre machine?")
 				resul=$?
-				echo " resul alias = $resul"
-				#read reponse
 				if [ $resul -eq 0 ]
 				then
-				#if [ $reponse == "O" -o $reponse == "o" -o $reponse == "oui" -o $reponse == "Oui" -o $reponse == "OUI" ]
 					echo "Quel alias voulez-vous donner ?"
 					surnom=$(zenity --entry --text="Quel alias voulez-vous donner?")
-					#read surnom 
+					ret=$?
+					if [ $ret == 1 ]
+					then
+						return 99
+					fi 
 					aliasMaj=${surnom^^}
+					#Vérifie que l'alias n'est pas utilisé, on ne peut pas avoir deux fois le même alias dans l'inventory ansible
 					if grep -w "$aliasMaj" "/etc/ansible/hosts" ; then
 						echo "Cet alias existe déjà, veuillez le supprimer dans le fichier /etc/ansible/hosts ou choisir un autre alias"
-						echo ""
 					else
 						echo "Quel est l'ip de la machine ?"
 						ip=$(zenity --entry --text="Quelle est l'adresse IP de la machine?")
-						#read ip 
+						ret=$?
+						if [ $ret == 1 ]
+						then
+							return 99
+						fi
 						goodIP $ip
 						ret=$?
 						if [ $ret -eq 1 ]
@@ -167,8 +192,10 @@ function host()
 							return 99
 						fi
 					fi
+					#Vérifie si le fichier hosts existe, sinon nous le créons 
 					if [ -e /etc/ansible/hosts ]
 					then
+						#Vérifie si le groupe existe, s'il existe nous placerons l'ip et/ou alias de la machine juste en dessous du groupe 
 						if grep -w "$host" "/etc/ansible/hosts" ; then
 							echo "ce groupe  existe déjà, ajout de la machine dans le groupe"
 							sudo sed -i "/$host/a $aliasMaj ansible_host=$ip" /etc/ansible/hosts
@@ -187,7 +214,11 @@ function host()
 				else
 					echo "Quel est l'ip de la machine ?"
 					ip=$(zenity --entry --text="Quelle est l'adresse IP de la machine?")
-					#read ip 
+					ret=$?
+					if [ $ret == 1 ]
+					then 
+						return 99
+					fi
 					goodIP $ip
 					ret=$?
 					if [ $ret -eq 1 ]
@@ -200,7 +231,7 @@ function host()
 					if [ -e /etc/ansible/hosts ]
 					then
 						if grep -w "$host" "/etc/ansible/hosts" ; then
-							echo "ce groupe  existe déja"
+							echo "ce groupe  existe déja, ajout de la machine au groupe"
 							sudo sed -i "/$host/a $ip" /etc/ansible/hosts
 							sudo rm -f $chemin/script/file/hosts
 							echo "ip ajouté au host" 
@@ -220,13 +251,15 @@ function host()
 				echo "Voulez-vous donner un alias à votre machine ? [O/N]"
 				reponse=$(zenity --question --text="Voulez-vous donner un alias à votre machine?")
 				resul=$?
-			        #read reponse
 				if [ $resul -eq 0 ]
-				#if [ $reponse == "O" -o $reponse == "o" ]
 				then 
 					echo "Quel alias voulez-vous donner ?"
 					surnom=$(zenity --entry --text="Quel alias voulez-vous donner?")
-					#read surnom
+					ret=$?
+					if [ $ret == 1 ]
+					then
+						return 99
+					fi 
 					aliasMaj=${surnom^^}
 					if grep -w "$aliasMaj" "/etc/ansible/hosts" ; then
 						echo "Cet alias existe déjà, veuillez le supprimer dans le fichier /etc/ansible/hosts ou choisir un autre alias"
@@ -234,7 +267,11 @@ function host()
 					else
 						echo "Quel est l'ip de la machine ?"
 						ip=$(zenity --entry --text="Quelle est l'adresse IP de votre machine?")
-						#read ip 
+						ret=$?
+						if [ $ret == 1 ]
+						then
+							return 99
+						fi
 						goodIP $ip
 						ret=$?
 						if [ $ret -eq 1 ]
@@ -265,7 +302,11 @@ function host()
 				else
 					echo "Quel est l'ip de la machine ?"
 					ip=$(zenity --entry --text="Quelle est l'adresse IP de votre machine?")
-					#read ip 
+					ret=$?
+					if [ $ret == 1 ]
+					then 
+						return 99
+					fi 
 					goodIP $ip
 					ret=$?
 					if [ $ret -eq 1 ]
@@ -298,17 +339,30 @@ function host()
 			if [ $majHost == "LINUX" -o $majHost == "UBUNTU" -o $majHost == "DEBIAN" -o $majHost == "KALI" ]
 			then 
 				configLinux $host
+			else
+				echo "Est-ce que le groupe que vous avez choisi fait parti du groupe linux ? [O/N]"
+				reponse=$(zenity --question --text="$host est un OS linux ? ")
+				resul=$?
+				if [ $resul -eq 1 ]
+				then 
+					echo "Veuillez contacter votre fournisseur, l'OS que vous utilisez n'est pas encore compatible"
+					return 99
+				else
+					configLinux $host
+				fi
 			fi
 			echo "Voulez-vous donner un alias à votre machine ? [O/N]"
 			reponse=$(zenity --question --text="Voulez-vous donner un alias à votre machine?")
 			resul=$?
 			if [ $resul -eq 0 ]
 			then
-			#if [ $reponse == "O" -o $reponse == "o" ]
-			#then
 				echo "Quel alias voulez-vous donner ?"
 				surnom=$(zenity --entry --text="Quel alias voulez-vous donner?")
-				#read surnom 
+				ret=$?
+				if [ $ret == 1 ]
+				then 
+					return 99
+				fi
 				aliasMaj=${surnom^^}
 				if grep -w "$aliasMaj" "/etc/ansible/hosts" ; then
 					echo "Cet alias existe déjà, veuillez le supprimer dans le fichier /etc/ansible/hosts ou choisir un autre alias"
@@ -316,7 +370,11 @@ function host()
 				else
 					echo "Quel est l'ip de la machine ?"
 					ip=$(zenity --entry --text="Quelle est l'ip de la machine?")
-					#read ip 
+					ret=$?
+					if [ $ret == 1 ]
+					then
+						return 99
+					fi
 					goodIP $ip
 					ret=$?
 					if [ $ret -eq 1 ]
@@ -347,7 +405,11 @@ function host()
 			else
 				echo "Quel est l'ip de la machine ?"
 				ip=$(zenity --entry --text="Quelle est l'ip de la machine?")
-				#read ip 
+				ret=$?
+				if [ $ret == 1 ]
+				then 
+					return 99
+				fi 
 				goodIP $ip
 				ret=$?
 				if [ $ret -eq 1 ]
