@@ -30,6 +30,7 @@ function addUser()
 	sed -i "s/ExampleUserPassword/$password/g" $chemin/backup.yml
 	ansible-playbook $chemin/backup.yml
 	rm $chemin/backup.yml
+	initial
 }
 function firefox()
 {
@@ -68,6 +69,7 @@ function firefox()
 		ansible-playbook $chemin/backupFirefox.yml
 		rm $chemin/backupFirefox.yml
 	fi
+	initial
 }
 function initial()
 {	
