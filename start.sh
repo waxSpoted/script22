@@ -18,9 +18,10 @@ function initial()
 	echo "1 - lancer l'installation des paquets"
 	echo "2 - ajouter un host (nécessite l'installation des paquets)" 
 	echo "3 - exécuter un playbook"
+	echo "4 - contact"
 	echo "99 - exit"
 	echo ""
-	choix=$(zenity --width=320 --height=220 --list --column=numéro --column=option "1" "installation de paquets" "2" "ajouter un hôt"e "3" "exécuter un playbook" "99" "exit" --text="Que souhaitez vous faire?")
+	choix=$(zenity --width=320 --height=300 --list --column=numéro --column=option "1" "installation de paquets" "2" "ajouter un hôte" "3" "exécuter un playbook" "4" "contact" "99" "exit" --text="Que souhaitez vous faire?")
 	#Ret permet de savoir si on clique sur le bouton annuler ou valider, si on clique sur annuler on sort du script
 	ret=$?
 	if [ $ret == 1 ]
@@ -42,6 +43,11 @@ function initial()
 		playbook
 	fi
 
+	if [ $choix == 4 ]
+	then
+		contact
+	fi
+
 	if [ $choix == 99 ]
 	then
 		return 99
@@ -50,6 +56,11 @@ function initial()
 function playbook()
 {
 	./playbook/playbook.sh $(pwd) 
+	initial
+}
+function contact()
+{
+	message=$(zenity --info --text="mail : test.test@gmail.com")
 	initial
 }
 function installation()
@@ -188,7 +199,7 @@ function host()
 						then
 							./script/hostAlias.sh $host $aliasMaj $ip $chemin
 						else
-							echo "l'ip : $ip n'est pas valide"
+							error=$(zenity --error --text="L'ip $ip n'est pas valide")
 							return 99
 						fi
 					fi
@@ -225,7 +236,7 @@ function host()
 					then
 						./script/host.sh $host $ip $chemin
 					else
-						echo "l'ip : $ip n'est pas valide veuillez recommencer"
+						error=$(zenity --error --text="L'ip $ip n'est pas valide")
 						return 99
 					fi
 					if [ -e /etc/ansible/hosts ]
@@ -278,7 +289,7 @@ function host()
 						then
 							./script/hostAlias.sh $host $aliasMaj $ip $chemin
 						else
-							echo "l'ip : $ip n'est pas valide veuillez recommencer"
+							error=$(zenity --error --text="L'ip $ip n'est pas valide")
 							return 99
 						fi
 						if [ -e /etc/ansible/hosts ]
@@ -313,7 +324,7 @@ function host()
 					then
 						./script/host.sh $host $ip $chemin
 					else
-						echo "l'ip : $ip n'est pas valide veuillez recommencer"
+						error=$(zenity --error --text="L'ip $ip n'est pas valide")
 						return 99
 					fi
 					if [ -e /etc/ansible/hosts ]
@@ -345,7 +356,7 @@ function host()
 				resul=$?
 				if [ $resul -eq 1 ]
 				then 
-					echo "Veuillez contacter votre fournisseur, l'OS que vous utilisez n'est pas encore compatible"
+					error=$(zenity --error --text="Veuillez contacter votre fournisseur, $host n'est pas compatible")
 					return 99
 				else
 					configLinux $host
@@ -381,7 +392,7 @@ function host()
 					then
 						./script/hostAlias.sh $host $aliasMaj $ip $chemin
 					else
-						echo "l'ip : $ip n'est pas valide veuillez recommencer"
+						error=$(zenity --error --text="L'ip $ip n'est pas valide")
 						return 99
 					fi 
 					if [ -e /etc/ansible/hosts ]
@@ -416,7 +427,7 @@ function host()
 				then
 					./script/host.sh $host $ip $chemin
 				else
-					echo "l'ip : $ip n'est pas valide veuillez recommencer"
+					error=$(zenity --error --text="L'ip $ip n'est pas valide")
 					return 99
 				fi
 				if [ -e /etc/ansible/hosts ]
@@ -441,6 +452,8 @@ function host()
 		fi
 	else 
 		echo "Si vous voulez ajouter des host veuillez lancer l'installation au préallable"
+		warning=$(zenity --warning --text="Veuillez lancer l'installation au préallable")
+		return 99 
 	fi
 	
 	echo ""
